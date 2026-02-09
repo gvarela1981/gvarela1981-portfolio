@@ -1,11 +1,11 @@
 # Propuesta Técnica: Infraestructura AWS para Agricultura de Carbono
 
-## 1. Objetivo del Sistema
+1. ##  Objetivo del Sistema
 El objetivo principal es desplegar una infraestructura en la nube (AWS) robusta, geoespacial y escalable, diseñada para el monitoreo evolutivo de la captura de carbono. El sistema permitirá la ingesta mensual de imágenes satelitales (Copernicus/Sentinel-2), el cálculo de índices biofísicos y el almacenamiento seguro a largo plazo, garantizando que los datos sean auditables para la comercialización de créditos de carbono.
 
 ---
 
-## 1. Descripción de Microservicios
+1.##  Descripción de Microservicios
 La arquitectura se basa en servicios desacoplados que separan la capacidad de cómputo del almacenamiento persistente, permitiendo que cada componente escale de forma independiente.
 
 ### a. Provisión para Visualización (S3 Standard)
@@ -28,14 +28,14 @@ La arquitectura se basa en servicios desacoplados que separan la capacidad de c�
 
 ---
 
-## 1. Diseño de Arquitectura (Fase MVP)
+1. ##  Diseño de Arquitectura (Fase MVP)
 El MVP inicia con **5 parcelas** piloto, estableciendo una base de datos de 12 rasters por parcela al año.
 * **Flujo de Datos:** La Lambda descarga -> Procesa -> Registra vector en PostGIS -> Mueve archivo a Deep Archive.
 * **Optimización:** Se mantiene el **último raster de cada parcela** en S3 Standard para visualización inmediata, minimizando costos de transferencia frente a la provisión directa desde la DB.
 
 ---
 
-## 1. Escalamiento de Datos e Infraestructura Cloud
+1. ## Escalamiento de Datos e Infraestructura Cloud
 El sistema opera bajo el principio de **pago por uso de infraestructura cloud**. Los costos de AWS se ajustan al volumen de datos, sin requerir re-implementación para escalar.
 
 | Tiempo | Parcelas | Impacto en Infraestructura Cloud |
@@ -50,7 +50,7 @@ El sistema opera bajo el principio de **pago por uso de infraestructura cloud**.
 
 ---
 
-## 1. Cronograma de Implementación (Roadmap)
+1. ##  Cronograma de Implementación (Roadmap)
 Se estima un tiempo total de **4 semanas** para la entrega de la infraestructura operativa.
 
 ### Fase 1: Setup de Entorno y Control de Gastos (Semana 1)
@@ -77,7 +77,7 @@ Se estima un tiempo total de **4 semanas** para la entrega de la infraestructura
 
 ---
 
-## 1. Estructura de Costos
+1. ## Estructura de Costos
 
 --> ### A. Costos de Implementación (Pago Único)
 | Concepto | Descripción | Costo (USD) |
@@ -100,7 +100,7 @@ Se estima un tiempo total de **4 semanas** para la entrega de la infraestructura
 
 ---
 
-## 1. Recomendaciones de Gestión y Control de Riesgos
+1. ## Recomendaciones de Gestión y Control de Riesgos
 
 1. **Eficiencia de Infraestructura:** Se recomienda que el cliente realice revisiones periódicas de métricas para validar que los recursos de AWS (sizing de instancia RDS y memoria Lambda) están optimizados para el volumen de datos vigente, asegurando la mayor eficiencia de costos fijos.
 2. **Límites de Ejecución y Alertas:** Para proteger la salud financiera, se configurará una alerta de presupuesto al alcanzar los $50 USD. El objetivo es detectar de forma temprana desviaciones de costos asociados a:
