@@ -5,37 +5,37 @@ El objetivo principal es desplegar una infraestructura en la nube (AWS) robusta,
 
 ---
 
-## 2. Descripción de Microservicios
+## 1. Descripción de Microservicios
 La arquitectura se basa en servicios desacoplados que separan la capacidad de cómputo del almacenamiento persistente, permitiendo que cada componente escale de forma independiente.
 
-### 2a. Provisión para Visualización (S3 Standard)
+### a. Provisión para Visualización (S3 Standard)
 * **Función:** Alojar el **último raster procesado de cada parcela** (estimado en 100 KB por archivo para ~27 ha).
 * **Beneficio:** Optimizado para baja latencia, permitiendo que visores GIS Web o de escritorio (como QGIS)carguen las imágenes de forma fluida mediante URLs firmadas, eliminando la sobrecarga de procesamiento de la base de datos.
 
-### 2b. Repositorio Histórico (S3 Glacier Deep Archive)
+### b. Repositorio Histórico (S3 Glacier Deep Archive)
 * **Función:** Almacenamiento de ultra bajo costo para el histórico mensual de rasters.
 * **Latencia de recuperación:** Entre 12 y 48 horas.
 * **Uso previsto:** Auditorías anuales o análisis profundo de evolución de carbono que no requieran disponibilidad inmediata.
 
-### 2c. Catálogo Geoespacial (RDS PostGIS t3.small)
+### c. Catálogo Geoespacial (RDS PostGIS t3.small)
 * **Función:** Repositorio de polígonos de parcelas, datos vectoriales de índices calculados (NDVI, Carbono, otros) y metadatos del inventario.
 * **Rutas de Acceso:** El catálogo incluye de forma explícita la ruta de descarga del GeoTIFF en el **storage de alta disponibilidad** (S3 Standard) y la ruta de acceso al GeoTIFF en el **storage de backup con alta latencia** (S3 Glacier Deep Archive).
 * **Disponibilidad:** Garantiza acceso inmediato a datos analíticos para generar gráficos y reportes comparativos de evolución temporal de forma instantánea.
 
-### 2d. Procesamiento Serverless (AWS Lambda)
+### d. Procesamiento Serverless (AWS Lambda)
 * **Función:** Ejecución del código Python para la descarga y análisis raster.
 * **Responsabilidad:** El mantenimiento del ciclo de vida del código y la gestión de APIs externas (Copernicus) corre a cargo del equipo técnico del cliente. La infraestructura soporta configuraciones de hasta 10GB de RAM si el geoproceso lo requiere.
 
 ---
 
-## 3. Diseño de Arquitectura (Fase MVP)
+## 1. Diseño de Arquitectura (Fase MVP)
 El MVP inicia con **5 parcelas** piloto, estableciendo una base de datos de 12 rasters por parcela al año.
 * **Flujo de Datos:** La Lambda descarga -> Procesa -> Registra vector en PostGIS -> Mueve archivo a Deep Archive.
 * **Optimización:** Se mantiene el **último raster de cada parcela** en S3 Standard para visualización inmediata, minimizando costos de transferencia frente a la provisión directa desde la DB.
 
 ---
 
-## 4. Escalamiento de Datos e Infraestructura Cloud
+## 1. Escalamiento de Datos e Infraestructura Cloud
 El sistema opera bajo el principio de **pago por uso de infraestructura cloud**. Los costos de AWS se ajustan al volumen de datos, sin requerir re-implementación para escalar.
 
 | Tiempo | Parcelas | Impacto en Infraestructura Cloud |
@@ -50,7 +50,34 @@ El sistema opera bajo el principio de **pago por uso de infraestructura cloud**.
 
 ---
 
-## 5. Estructura de Costos
+## 1. Cronograma de Implementación (Roadmap)
+Se estima un tiempo total de **4 semanas** para la entrega de la infraestructura operativa.
+
+### Fase 1: Setup de Entorno y Control de Gastos (Semana 1)
+* Configuración de cuenta AWS, VPC y subredes.
+* **Activación de CloudWatch Alarms y AWS Budgets (Alertas de presupuesto).**
+* Creación de políticas IAM y roles de ejecución.
+* Configuración de buckets S3 (Standard y Glacier).
+
+### Fase 2: Despliegue de Base de Datos y Lógica (Semana 2)
+* Instanciación de RDS PostGIS t3.small.
+* Creación del esquema de tablas (Catálogo, Índices e Inventario).
+* Configuración de las funciones Lambda (Entorno Python y librerías).
+* **Configuración de límites de concurrencia en Lambda.**
+
+### Fase 3: Integración y Pruebas (Semana 3)
+* Pruebas de conectividad con APIs de Copernicus/Sentinel.
+* Validación de flujo de datos (Standard -> Glacier).
+* Testing de recuperación de datos de alta latencia bajo monitoreo activo de costos.
+
+### Fase 4: Optimización y Handover (Semana 4)
+* Refinamiento de métricas de rendimiento.
+* Documentación técnica de arquitectura.
+* Sesión de transferencia de conocimiento (Handover técnico).
+
+---
+
+## 1. Estructura de Costos
 
 --> ### A. Costos de Implementación (Pago Único)
 | Concepto | Descripción | Costo (USD) |
@@ -73,7 +100,7 @@ El sistema opera bajo el principio de **pago por uso de infraestructura cloud**.
 
 ---
 
-## 6. Recomendaciones de Gestión y Control de Riesgos
+## 1. Recomendaciones de Gestión y Control de Riesgos
 
 1. **Eficiencia de Infraestructura:** Se recomienda que el cliente realice revisiones periódicas de métricas para validar que los recursos de AWS (sizing de instancia RDS y memoria Lambda) están optimizados para el volumen de datos vigente, asegurando la mayor eficiencia de costos fijos.
 2. **Límites de Ejecución y Alertas:** Para proteger la salud financiera, se configurará una alerta de presupuesto al alcanzar los $50 USD. El objetivo es detectar de forma temprana desviaciones de costos asociados a:
