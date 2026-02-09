@@ -46,7 +46,7 @@ El sistema opera bajo el principio de **pago por uso de infraestructura cloud**.
 
 ### Análisis de Almacenamiento (Basado en 100 KB/raster):
 * **S3 Standard:** Crecimiento horizontal. 1,500 parcelas ocupan ~150 MB de datos "vivos".
-* **S3 Deep Archive:** Crecimiento acumulativo. 1,500 parcelas x 12 meses ocupan ~1.8 GB/año. El impacto financiero es marginal debido al bajo costo por GB (~$0.0017 USD de almacenamiento puro).
+* **S3 Deep Archive:** Crecimiento acumulativo. 1,500 parcelas x 12 meses ocupan \~1.8 GB/año. El impacto financiero es marginal debido al bajo costo por GB (\~$0.0017 USD de almacenamiento puro).
 
 ---
 
@@ -79,7 +79,7 @@ Se estima un tiempo total de **4 semanas** para la entrega de la infraestructura
 
 ## 6. Estructura de Costos
 
---> ### A. Costos de Implementación (Pago Único)
+### A. Costos de Implementación (Pago Único)
 | Concepto | Descripción | Costo (USD) |
 | :--- | :--- | :--- |
 | **Configuración SaaS** | Despliegue de S3, Lambdas, VPC y Roles de Seguridad IAM. | $1,000 |
