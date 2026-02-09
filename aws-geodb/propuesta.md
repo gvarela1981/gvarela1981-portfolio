@@ -10,7 +10,7 @@ La arquitectura se basa en servicios desacoplados que separan la capacidad de c�
 
 ### 2a. Provisión para Visualización (S3 Standard)
 * **Función:** Alojar el **último raster procesado de cada parcela** (estimado en 100 KB por archivo para ~27 ha).
-* **Beneficio:** Optimizado para baja latencia, permitiendo que visores GIS Web o de escritorio carguen las imágenes de forma fluida mediante URLs firmadas, eliminando la sobrecarga de procesamiento de la base de datos.
+* **Beneficio:** Optimizado para baja latencia, permitiendo que visores GIS Web o de escritorio (como QGIS)carguen las imágenes de forma fluida mediante URLs firmadas, eliminando la sobrecarga de procesamiento de la base de datos.
 
 ### 2b. Repositorio Histórico (S3 Glacier Deep Archive)
 * **Función:** Almacenamiento de ultra bajo costo para el histórico mensual de rasters.
@@ -68,7 +68,7 @@ El sistema opera bajo el principio de **pago por uso de infraestructura cloud**.
 | **Cómputo (Lambda)** | Procesamiento + Transferencia de descarga. | $5.00 |
 | **Base de Datos (RDS)** | Instancia t3.small + Almacenamiento. | $18.00 |
 | **S3 Standard** | Almacenamiento activo + Salida a mapas. | $4.50 |
-| **S3 Deep Archive** | Almacenamiento histórico acumulado. | $1.50 |
+| **S3 Deep Archive** | Almacenamiento histórico acumulado **($0.00099 por GB)**. | $1.50 |
 | **TOTAL MENSUAL** | | **~$29.00** |
 
 ---
