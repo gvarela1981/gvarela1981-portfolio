@@ -15,15 +15,16 @@ La arquitectura se basa en servicios desacoplados que separan la capacidad de c�
 ### 2b. Repositorio Histórico (S3 Glacier Deep Archive)
 * **Función:** Almacenamiento de ultra bajo costo para el histórico mensual de rasters.
 * **Latencia de recuperación:** Entre 12 y 48 horas.
-* **Uso previsto:** Auditorías anuales o análisis profundo de evolución de carbono.
+* **Uso previsto:** Auditorías anuales o análisis profundo de evolución de carbono que no requieran disponibilidad inmediata.
 
 ### 2c. Catálogo Geoespacial (RDS PostGIS t3.small)
-* **Función:** Repositorio de polígonos de parcelas, datos vectoriales de índices calculados (NDVI, Carbono, otros) y metadatos.
-* **Disponibilidad:** Garantiza acceso inmediato a datos analíticos para generar gráficos y reportes comparativos de evolución temporal.
+* **Función:** Repositorio de polígonos de parcelas, datos vectoriales de índices calculados (NDVI, Carbono, otros) y metadatos del inventario.
+* **Rutas de Acceso:** El catálogo incluye de forma explícita la ruta de descarga del GeoTIFF en el **storage de alta disponibilidad** (S3 Standard) y la ruta de acceso al GeoTIFF en el **storage de backup con alta latencia** (S3 Glacier Deep Archive).
+* **Disponibilidad:** Garantiza acceso inmediato a datos analíticos para generar gráficos y reportes comparativos de evolución temporal de forma instantánea.
 
 ### 2d. Procesamiento Serverless (AWS Lambda)
 * **Función:** Ejecución del código Python para la descarga y análisis raster.
-* **Responsabilidad:** El mantenimiento del ciclo de vida del código y la gestión de APIs externas (Copernicus) corre a cargo del equipo técnico del cliente.
+* **Responsabilidad:** El mantenimiento del ciclo de vida del código y la gestión de APIs externas (Copernicus) corre a cargo del equipo técnico del cliente. La infraestructura soporta configuraciones de hasta 10GB de RAM si el geoproceso lo requiere.
 
 ---
 
@@ -45,22 +46,22 @@ El sistema opera bajo el principio de **pago por uso de infraestructura cloud**.
 
 ### Análisis de Almacenamiento (Basado en 100 KB/raster):
 * **S3 Standard:** Crecimiento horizontal. 1,500 parcelas ocupan ~150 MB de datos "vivos".
-* **S3 Deep Archive:** Crecimiento acumulativo. 1,500 parcelas x 12 meses ocupan ~1.8 GB/año. El impacto financiero es marginal debido al bajo costo por GB.
+* **S3 Deep Archive:** Crecimiento acumulativo. 1,500 parcelas x 12 meses ocupan ~1.8 GB/año. El impacto financiero es marginal debido al bajo costo por GB (~$0.0017 USD de almacenamiento puro).
 
 ---
 
 ## 5. Estructura de Costos
 
-### A. Costos de Implementación (Pago Único)
+--> ### A. Costos de Implementación (Pago Único)
 | Concepto | Descripción | Costo (USD) |
 | :--- | :--- | :--- |
-| **Configuración IaaS** | Infraestructura S3, Lambdas, VPC y Roles IAM. | $1,000 |
+| **Configuración SaaS** | Despliegue de S3, Lambdas, VPC y Roles de Seguridad IAM. | $1,000 |
 | **Setup de DB** | Configuración RDS PostGIS y esquema de tablas. | $600 |
 | **Handover Técnico** | Documentación y transferencia de credenciales. | $400 |
 | **TOTAL** | | **$2,000** |
 
 ### B. Costos de Mantenimiento Mensual (Estimación AWS)
-*Proyección para 1,500 parcelas.*
+*Proyección estimada para el escenario de 1,500 parcelas, calculada con un tamaño promedio de **GeoTIFF de 100 KB**.*
 
 | Servicio | Detalle | Costo Est. (USD) |
 | :--- | :--- | :--- |
@@ -74,9 +75,9 @@ El sistema opera bajo el principio de **pago por uso de infraestructura cloud**.
 
 ## 6. Recomendaciones de Gestión y Control de Riesgos
 
-1. **Eficiencia de Infraestructura:** Se recomienda que el cliente realice revisiones periódicas de métricas para validar que los recursos de AWS (sizing de instancia RDS y memoria Lambda) están optimizados para el volumen de datos vigente.
-2. **Límites de Ejecución y Alertas:** Se configurará una alerta de presupuesto al alcanzar los **$50 USD** para detectar tempranamente desviaciones de costos por:
+1. **Eficiencia de Infraestructura:** Se recomienda que el cliente realice revisiones periódicas de métricas para validar que los recursos de AWS (sizing de instancia RDS y memoria Lambda) están optimizados para el volumen de datos vigente, asegurando la mayor eficiencia de costos fijos.
+2. **Límites de Ejecución y Alertas:** Para proteger la salud financiera, se configurará una alerta de presupuesto al alcanzar los $50 USD. El objetivo es detectar de forma temprana desviaciones de costos asociados a:
     * Pruebas de código intensivas.
-    * Errores de ejecuciones simultáneas o bucles.
+    * Ejecuciones simultáneas accidentales o bucles.
     * Descargas fallidas o errores en el consumo de APIs externas.
 3. **Circuit Breaker:** Se establecerán límites de concurrencia en Lambda para evitar picos de facturación por errores operativos del script Python.
