@@ -33,6 +33,11 @@ El MVP inicia con **5 parcelas** piloto, estableciendo una base de datos de 12 r
 * **Flujo de Datos:** La Lambda descarga -> Procesa -> Registra vector en PostGIS -> Mueve archivo a Deep Archive.
 * **Optimización:** Se mantiene el **último raster de cada parcela** en el storage S3 Standard para visualización inmediata, minimizando costos de transferencia frente a la provisión directa desde la DB.
 
+La arquitectura está diseñada para crecer junto con el volumen de negocio sin necesidad de re-ingeniería:
+
+1. **Fase Inicial (Hasta 10.000 parcelas):** Se mantiene la configuración actual de **~€45,61/mes**.
+2. **Fase de Expansión (Análisis masivo):** Si la complejidad de los cálculos espaciales aumenta o se requiere disponibilidad crítica (99.99%), se recomienda el escalado a **Multi-AZ** y duplicar la RAM (pasando a servicio RDS `t3.medium`), lo que situaría el costo operativo en torno a los **€95/mes**.
+
 ---
 
 ## 4. Escalamiento de Datos e Infraestructura Cloud
@@ -45,10 +50,16 @@ El sistema opera bajo el principio de **pago por uso de infraestructura cloud**.
 | **12 Meses** | 1,500 | ~18,000 registros de índices/año. DB estimada en ~225MB. |
 
 ### Análisis de Almacenamiento (Basado en 100 KB/raster):
-* **Storage S3 Standard:** Crecimiento horizontal. 1,500 parcelas ocupan ~150 MB de datos "vivos", de acceso inmediato.
-* **Storage S3 Deep Archive:** Crecimiento acumulativo. 1,500 parcelas x 12 meses ocupan \~1.8 GB/año. El impacto financiero debería ser marginal marginal debido al bajo costo por GB (\~€0.0017 USD de almacenamiento puro).
+* **Storage S3 Standard:** Crecimiento horizontal. 1,500 parcelas ocupan ~150 MB de datos "vivos", de acceso inmediato. El costo de almacenamiento es $0,0245 USD por GB mientras el espacio total se mantenga dentro de los 50TB/mes.
+* **Storage S3 Deep Archive:** Crecimiento acumulativo. 1,500 parcelas x 12 meses ocupan \~1.8 GB/año. El impacto financiero debería ser marginal debido al bajo costo por GB (\~$0.0018 USD de almacenamiento puro).
 
---> (segun la documentacion de AWS, link a la fuente) 
+*Los costos están expresados en dólares norteamericanos tomados el 09/02/2026 de la documentación oficial de AWS para la zona Frankfurt*
+
+*Los costos de los storage S3 se han proyectado basándose en las tarifas públicas de AWS eligiendo la región eu-central-1:*
+*[Detalle de precios Amazon Storage S3 - https://aws.amazon.com/es/s3/pricing/?nc=sn&loc=4](https://aws.amazon.com/es/s3/pricing/?nc=sn&loc=4)*
+
+*Los costos de la base de datos se han proyectado basándose en el cálculo realizado con la herramienta oficial de AWS, eligiendo la región eu-central-1:*
+*[Detalle de precios Amazon RDS para PostgreSQL - (https://calculator.aws/#/createCalculator/RDSPostgreSQL)](https://calculator.aws/#/createCalculator/RDSPostgreSQL)*
 
 ---
 
@@ -67,7 +78,7 @@ Se estima un tiempo total de **4 semanas** para la entrega de la infraestructura
 * Configuración de las funciones Lambda (Entorno Python y librerías).
 * **Configuración de límites de concurrencia en Lambda** para evitar multiples ejecuciones simultáneas y limitar la aparición de costos sorpresa.
 
-*La preparación del entorno esta sujeta la confirmación del cliente sobre las librerías necesarias en el entorno.*
+*La preparación del entorno python y la estructura de la base de datos esta sujeta la confirmación del cliente sobre las librerías necesarias en el entorno, y la aprobación del esquema de las tablas.*
 
 ### Fase 3: Integración y Pruebas (Semana 3)
 * Pruebas de conectividad con APIs de Copernicus/Sentinel.
@@ -91,31 +102,34 @@ Se estima un tiempo total de **4 semanas** para la entrega de la infraestructura
 | :--- | :--- | :--- |
 | **Configuración SaaS** | Despliegue de S3, Lambdas, VPC y Roles de Seguridad IAM. | €1,800 |
 | **Setup de DB** | Configuración RDS PostGIS, implementación de esquema de tablas aprobado. | €1200 |
-| **Handover Técnico** | Documentación y transferencia de credenciales. | €800 |
+| **Handover Técnico** | Documentación técnia, documentación operativa de Backup/Restore de la geoDB y transferencia de credenciales. | €800 |
 | **TOTAL** | | **€3,800** |
 
 > **Compromiso de Agilidad y Plazos:** > Para el cumplimiento del cronograma de 4 semanas la estrategia de trabajo prioriza la **efectividad en los hitos de validación conjunta**. Se busca minimizar las demoras mediante una comunicación directa en las definiciones y en las sesiones conjuntas de pruebas técnicas. Se buscará que el trabajo conjunto sea ágil y no impacte el plazo de entrega final.
 
-### B. Costos de Mantenimiento Mensual (Estimación AWS)
-*La facturación de estos costos fijos estarán a cargo de Amazon y estan sujetos a cambios por parte del proveedor.* 
+### B. Costos de Mantenimiento Mensual (Estimación AWS - Frankfurt)
+*La facturación de estos costos fijos estarán a cargo de Amazon y estan sujetos a cambios por parte del proveedor. La estimación se realizó de acuerdo a los costos de cada componente informados en la documentación de AWS para las instancias alojadas en la Unión Europea (Franckfurt).* 
 
 *La proyección estimada para el escenario de 1,500 parcelas, calculada con un tamaño promedio de **GeoTIFF de 100 KB**.*
 
---> Los precios de AWS salen de esta documentacion a la fecha tal
 
-| Servicio | Detalle | Costo Est. (EUR) |
+| Servicio | Detalle del Recurso | Costo Est. (EUR) |
 | :--- | :--- | :--- |
-| **Cómputo (Lambda)** | Procesamiento + Transferencia de descarga. | €5.00 |
-| **Base de Datos (RDS)** | Instancia t3.small + Almacenamiento. | €18.00 |
-| **S3 Standard** | Almacenamiento activo + Salida a mapas. | €4.50 |
-| **S3 Deep Archive** | Almacenamiento histórico acumulado **(€0.00099 por GB)**. | €1.50 |
-| **TOTAL MENSUAL** | | **~€29.00** |
+| **Cómputo (RDS)** | Instancia db.t3.small (Single-AZ) | €30,36 |
+| **Almacenamiento (RDS)** | 40 GB SSD de Uso General (GP3) | €5,10 |
+| **Storage (S3)** | Capas Standard + Glacier Deep Archive | €5,50 |
+| **Cómputo (Lambda)** | Procesamiento mensual de imágenes | €4,65 |
+| **TOTAL MENSUAL ESTIMADO** | | **~€45,61 / mes** |
+
+*Los costos de AWS se calcularon el día 09/02/2026 utilizando la calculadora provista por AWS para la zona Frankfurt y están sujetos a cambios por parte del proveedor.*
+*Acceso a la calculadora de costos: [Configurador de Costos RDS PostgreSQL](https://calculator.aws/#/createCalculator/RDSPostgreSQL)*
+*Se adjunta documento adicional con la configuración utilizada para esta estimacion de costo RDS-Postgis-Frankfurt.pdf*
 
 ---
 
 ## 7. Recomendaciones de Gestión y Control de Riesgos
 
-1. **Eficiencia de Infraestructura:** Se recomienda que el cliente realice revisiones periódicas de métricas para validar que los recursos de AWS (sizing de instancia RDS, tamaño de los Storage y memoria Lambda) están optimizados para el volumen de datos real, asegurándonse que los cambios en el volumen de datos procesados y almacenados no disminuya la eficiencia de los recursos o un incremento en la incidencia de los costos fijos.
+1. **Eficiencia de Infraestructura:** Se recomienda que el cliente realice revisiones periódicas de métricas para validar que los recursos de AWS (sizing de instancia RDS, tamaño de los Storage y memoria Lambda) están optimizados para el volumen de datos real, buscando evitar que los cambios en el volumen de datos procesados y almacenados mantenga la eficiencia de los recursos y no incremente el impacto de los costos fijos.
 2. **Límites de Ejecución y Alertas:** Para proteger la salud financiera, se configurará una alerta de presupuesto al alcanzar los €50 USD. El objetivo es detectar de forma temprana desviaciones de costos asociados a:
     * Pruebas de código intensivas.
     * Ejecuciones simultáneas accidentales o bucles.
